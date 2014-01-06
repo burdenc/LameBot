@@ -19,7 +19,7 @@ class Loader():
 		for module in self.ext_names:
 			module = importlib.import_module('ext.'+module)
 			class_info = self._get_class(module)
-			class_obj = class_info[1](self.scheduler, self.bot, self.sql)
+			class_obj = class_info[1](self.scheduler, self.bot.network_list, self.sql)
 			self.plugins.append({'name':class_info[0], 'object':class_obj, 'module': module})
 		self._install_plugins()
 		self._start_plugins()

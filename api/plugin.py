@@ -15,8 +15,8 @@ class Result():
 class Plugin():
 	__metaclass__ = ABCMeta
 
-	def __init__(self, scheduler, bot, sql):
-		self.api = bot
+	def __init__(self, scheduler, network_list, sql):
+		self.api = network_list
 		self.sql = sql
 		self._scheduler = scheduler
 		
