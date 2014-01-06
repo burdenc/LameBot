@@ -1,7 +1,6 @@
 #TODO: change api to allow multiple server connections
 #TODO: use pyconf to load in servers to connect to, nick info, etc.
 #TODO: flesh out irc.py api
-#TODO: sandboxing of plugins to certain channels
 
 import net.irc, api.scheduler, api.loader
 import sys, string, time, sqlite3, ConfigParser, collections
@@ -14,13 +13,13 @@ class Bot():
 
 		for network in self.network_list:
 			connection = net.irc.IRC()
-			'''connection.connect(
+			connection.connect(
 				network['address'],
 				network['port'],
 				network['nick'],
 				network['real_name'],
 				network['channels']
-			)'''
+			)
 			network['connection'] = connection
 
 		scheduler = api.scheduler.Scheduler()
@@ -59,6 +58,24 @@ class Bot():
 			if section == 'Global': continue
 			items = config.items(section)
 			items = dict(items)
+			items['allowed_channels'] = {}
+			
+			channels = string.split(items['channels'], ';')
+			items['channels'] = [string.split(x, ',')[0] for x in channels]
+			for channel in channels:
+				try:
+					split_data = string.split(channel, ',')
+					channel = split_data[0]
+					extensions = split_data[1:]
+				except KeyError:
+					continue
+				
+				for extension in extensions:
+					try:
+						items['allowed_channels'][extension] += channel
+					except KeyError:
+						items['allowed_channels'][extension] = [channel]
+			
 			items['_name_'] = section
 			self.network_list.append(items)
 	
