@@ -1,3 +1,5 @@
+from abc import ABCMeta, abstractmethod
+
 class Priority():
 	MAX = 5
 	HIGH = 4
@@ -11,6 +13,8 @@ class Result():
 
 #Abstract class, do not instantiate
 class Plugin():
+	__metaclass__ = ABCMeta
+
 	def __init__(self, scheduler, bot, sql):
 		self.api = bot
 		self.sql = sql
@@ -18,6 +22,11 @@ class Plugin():
 		
 	def register_event(self, event_name, func, priority = Priority.NORMAL):
 		self._scheduler.register_event(event_name, self, func, priority)
-		
+	
+	@abstractmethod
 	def _install_(self):
+		pass
+		
+	@abstractmethod
+	def _start_(self):
 		pass
