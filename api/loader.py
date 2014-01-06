@@ -14,13 +14,18 @@ class Loader():
 		self.sql.execute('CREATE TABLE IF NOT EXISTS `__plugins` (name)')
 		self.sql_conn.commit()
 	
-	def load_all(self):
+	def load_all(self, load_extensions = None):
 		self.plugins = []
 		for module in self.ext_names:
 			module = importlib.import_module('ext.'+module)
 			class_info = self._get_class(module)
+			
+			if class_info is None or load_extensions is not None and class_info[0] not in load_extensions:
+				continue
+				
 			class_obj = class_info[1](self.scheduler, self.bot.network_list, self.sql)
 			self.plugins.append({'name':class_info[0], 'object':class_obj, 'module': module})
+
 		self._install_plugins()
 		self._start_plugins()
 		self.sql_conn.commit()

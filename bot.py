@@ -24,7 +24,7 @@ class Bot():
 
 		scheduler = api.scheduler.Scheduler()
 		loader = api.loader.Loader(scheduler, self, conn)
-		loader.load_all()
+		loader.load_all(self.load_extensions)
 
 
 	def run(self):
@@ -50,12 +50,19 @@ class Bot():
 	def _parse_config(self, conf_file):
 		config = ConfigParser.ConfigParser()
 		config.read([conf_file])
-		defaults = config.items('Global')
+		
+		try:
+			self.load_extensions = config.get('~~Bot~~', 'load_extensions')
+			self.load_extensions = string.split(self.load_extensions, ',')
+		except ConfigParser.NoOptionError:
+			self.load_extensions = None
+		
+		defaults = config.items('~~Global~~')
 		config._defaults = collections.OrderedDict(defaults)
 		
 		self.network_list = []
 		for section in config.sections():
-			if section == 'Global': continue
+			if section == '~~Global~~' or section == '~~Bot~~': continue
 			items = config.items(section)
 			items = dict(items)
 			items['allowed_channels'] = {}
