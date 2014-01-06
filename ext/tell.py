@@ -8,51 +8,51 @@ class Tell(Plugin):
 		self.register_event('join', Tell.on_join, Priority.HIGH)
 		
 	def _install_(self):
-		self.sql.execute('CREATE TABLE `tell_tells` (target, time, sender, message)')
+		self.sql.execute('CREATE TABLE `tell_tells` (target, time, sender, message, network)')
 	
-	def on_msg(self, data):
+	def on_msg(self, data, network):
 		print 'GETTING CALLED WITH %s' % data
-		tells = self.sql.execute('SELECT * FROM `tell_tells` WHERE target = ? ORDER BY time ASC', (data['sender'],)).fetchall()
+		tells = self.sql.execute('SELECT * FROM `tell_tells` WHERE target = ? AND network = ? ORDER BY time ASC', (data['sender'], network['_name_'])).fetchall()
 		for tell in tells:
-			self.api.msg(data['channel'], ('[%s] %s: <%s> %s') % ( \
+			network['connection'].msg(data['channel'], ('[%s] %s: <%s> %s') % ( \
 			self.time2str(time.time()-tell[1]),
 			data['sender'],
 			tell[2],
 			tell[3]
 			))
 		if len(tells) != 0:
-			self.sql.execute('DELETE FROM `tell_tells` WHERE target = ?', (data['sender'],))
+			self.sql.execute('DELETE FROM `tell_tells` WHERE target = ? AND network = ?', (data['sender'], network['_name_']))
 			return
 		
 		message = string.split(data['message'])
 		if len(message) >= 3 and message[0] == '.tell':
 			#3 tell limit per person
-			result = self.sql.execute('SELECT count(*) FROM `tell_tells` WHERE target = ? GROUP BY target', (message[1],)).fetchone()
+			result = self.sql.execute('SELECT count(*) FROM `tell_tells` WHERE target = ? AND network = ? GROUP BY target', (message[1], network['_name_'])).fetchone()
 			if result is not None and result[0] >= 3:
-				self.api.msg(data['channel'], '%s: There are already 3 tells stored for that nickname' % data['sender'])
+				network['connection'].msg(data['channel'], '%s: There are already 3 tells stored for that nickname' % data['sender'])
 				return Result.PREVENT_ALL
 			
-			self.api.msg(data['channel'], '%s: gotcha' % data['sender'])
+			network['connection'].msg(data['channel'], '%s: gotcha' % data['sender'])
 			target = message[1]
 			msg = ' '.join(message[2:])
-			self.sql.execute('INSERT INTO `tell_tells` VALUES (?,?,?,?)', (message[1], long(time.time()), data['sender'], msg))
+			self.sql.execute('INSERT INTO `tell_tells` VALUES (?,?,?,?,?)', (message[1], long(time.time()), data['sender'], msg, network['_name_']))
 		
 			return Result.PREVENT_ALL
 			
 		return Result.SUCCESS
 	
-	def on_join(self, data):
+	def on_join(self, data, network):
 		print 'JOIN GETTING CALLED WITH %s' % data
-		tells = self.sql.execute('SELECT * FROM `tell_tells` WHERE target = ? ORDER BY time ASC', (data['sender'],)).fetchall()
+		tells = self.sql.execute('SELECT * FROM `tell_tells` WHERE target = ? AND network = ? ORDER BY time ASC', (data['sender'], network['_name_'])).fetchall()
 		for tell in tells:
-			self.api.msg(data['channel'], ('[%s] %s: <%s> %s') % ( \
+			network['connection'].msg(data['channel'], ('[%s] %s: <%s> %s') % ( \
 			self.time2str(time.time()-tell[1]),
 			data['sender'],
 			tell[2],
 			tell[3]
 			))
 		if len(tells) != 0:
-			self.sql.execute('DELETE FROM `tell_tells` WHERE target = ?', (data['sender'],))
+			self.sql.execute('DELETE FROM `tell_tells` WHERE target = ? AND network = ?', (data['sender'], network['_name_']))
 
 	def time2str(self, seconds):
 		seconds = long(seconds)
