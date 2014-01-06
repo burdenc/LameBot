@@ -10,6 +10,9 @@ class Loader():
 		self.bot = bot
 		self.sql_conn = sql_conn
 		self.sql = sql_conn.cursor()
+		
+		self.sql.execute('CREATE TABLE IF NOT EXISTS `__plugins` (name)')
+		self.sql_conn.commit()
 	
 	def load_all(self):
 		self.plugins = []
