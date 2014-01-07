@@ -4,6 +4,7 @@ from api.plugin import Plugin, Result, Priority
 class Tell(Plugin):
 
 	def _start_(self):
+		self.logger.info('Starting Tell plugin')
 		self.register_event('channel_message', Tell.on_msg, Priority.HIGH)
 		self.register_event('join', Tell.on_join, Priority.HIGH)
 		
@@ -11,7 +12,7 @@ class Tell(Plugin):
 		self.sql.execute('CREATE TABLE `tell_tells` (target, time, sender, message, network)')
 	
 	def on_msg(self, data, network):
-		print 'GETTING CALLED WITH %s' % data
+		self.logger.debug('on_msg called with %s', data)
 		tells = self.sql.execute('SELECT * FROM `tell_tells` WHERE target = ? AND network = ? ORDER BY time ASC', (data['sender'], network['_name_'])).fetchall()
 		for tell in tells:
 			network['connection'].msg(data['channel'], ('[%s] %s: <%s> %s') % ( \
@@ -42,7 +43,7 @@ class Tell(Plugin):
 		return Result.SUCCESS
 	
 	def on_join(self, data, network):
-		print 'JOIN GETTING CALLED WITH %s' % data
+		self.logger.debug('on_join called with %s', data)
 		tells = self.sql.execute('SELECT * FROM `tell_tells` WHERE target = ? AND network = ? ORDER BY time ASC', (data['sender'], network['_name_'])).fetchall()
 		for tell in tells:
 			network['connection'].msg(data['channel'], ('[%s] %s: <%s> %s') % ( \

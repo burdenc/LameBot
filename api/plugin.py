@@ -15,10 +15,11 @@ class Result():
 class Plugin():
 	__metaclass__ = ABCMeta
 
-	def __init__(self, scheduler, network_list, sql):
+	def __init__(self, scheduler, network_list, sql, logger):
 		self.api = network_list
 		self.sql = sql
 		self._scheduler = scheduler
+		self.logger = logger
 		
 	def register_event(self, event_name, func, priority = Priority.NORMAL):
 		self._scheduler.register_event(event_name, self, func, priority)

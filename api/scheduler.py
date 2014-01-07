@@ -1,12 +1,14 @@
 from api.plugin import Result, Priority
+from util import logger_factory
 
 class Scheduler():
 	
 	def __init__(self):
 		self._registered = {}
+		self.logger = logger_factory.instance().getLogger('api.scheduler')
 	
 	def register_event(self, event_name, obj, func, priority = Priority.NORMAL):
-		print 'REGISTERING %s for %s' % (event_name, func)
+		self.logger.debug('Registering %s for %s', func, event_name)
 		try:
 			self._registered[event_name] += [(priority, obj, func)]
 		except KeyError:

@@ -1,5 +1,5 @@
 import os, importlib, inspect
-import api.plugin
+import api.plugin, util.logger_factory
 
 class Loader():
 	
@@ -22,8 +22,9 @@ class Loader():
 			
 			if class_info is None or load_extensions is not None and class_info[0] not in load_extensions:
 				continue
-				
-			class_obj = class_info[1](self.scheduler, self.bot.network_list, self.sql)
+			
+			logger = util.logger_factory.instance().getLogger('ext.'+class_info[0])
+			class_obj = class_info[1](self.scheduler, self.bot.network_list, self.sql, logger)
 			self.plugins.append({'name':class_info[0], 'object':class_obj, 'module': module})
 
 		self._install_plugins()
