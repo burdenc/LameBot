@@ -1,7 +1,11 @@
 import socket, string, time, re
+import util.logger_factory
 
 class IRC():
-
+	def __init__(self, name):
+		self.name = name
+		self.logger = util.logger_factory.instance().getLogger('net.irc.'+name)
+	
 	def connect(self, host, port = 6667, nick = 'DBBot', real_name = 'My bot', channels = []):
 		self.host = host
 		self.port = port
@@ -18,6 +22,13 @@ class IRC():
 		self._send_raw(Commands.NICK(nick))
 		self._send_raw(Commands.USER(nick, real_name))
 		
+		self.logger.info(
+						 'Connected to %s on port %s in channels %s',
+						 host,
+						 port,
+						 channels
+		)
+		
 	def disconnect(self, reason = 'cya nerds'):
 		self._send_raw(Commands.QUIT(reason))
 		self._conn_socket.close()
@@ -27,6 +38,7 @@ class IRC():
 		if channels is None:
 			channels = self.chan_list
 			channels = ','.join(channels)
+		self.logger.debug('Joining channels %s', channels)
 		self._send_raw(Commands.JOIN(channels))
 		
 	def msg(self, target, message):
@@ -37,11 +49,15 @@ class IRC():
 		buffer = string.rstrip(buffer)
 		buffer = string.split(buffer, '\r\n')
 		return buffer
+	
+	#Used to comply with select.select()
+	def fileno(self):
+		return self._conn_socket.fileno()
 		
 	def _send_raw(self, message):
 		if message[-2:] != '\r\n':
 			message += '\r\n'
-		print 'SENDING: %s' % message[:-2]
+		self.logger.debug('SENDING: %s', message[:-2])
 		sent = self._conn_socket.sendall(message)
 
 #Commonly received message syntax

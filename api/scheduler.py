@@ -15,6 +15,8 @@ class Scheduler():
 			self._registered[event_name] = [(priority, obj, func)]
 	
 	def call_event(self, event_name, data, network):
+		self.logger.debug('Calling event %s for network %s with data %s', event_name, network, data)
+	
 		#try:
 		if event_name not in self._registered:
 			return

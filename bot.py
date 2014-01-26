@@ -1,43 +1,45 @@
 #TODO: change api to allow multiple server connections
 #TODO: use pyconf to load in servers to connect to, nick info, etc.
 #TODO: flesh out irc.py api
+#TODO: add functionality to control bot via DCC or private message (PRIVMSG ^ACTCP DCC CHAT <host> <port>^A)
+#TODO: convert all channels to lowercase (because IRC network will do that)
 
 import net.irc, api.scheduler, api.loader, util.logger_factory
-import sys, string, time, sqlite3, ConfigParser, collections, logging
+import sys, string, time, sqlite3, ConfigParser, collections, logging, select
 
 class Bot():
 	def __init__(self, conf_file):
 		self._parse_config(conf_file)
-		self.logger = util.logger_factory.instance().getLogger('main')
 
-		conn = sqlite3.connect('bot.db')
+		self.conn = sqlite3.connect('bot.db')
 		self.logger.debug('sqlite connection created')
+		
+		#Used to have non-blocking polling of each network via select.select()
+		#Stores file descriptor of each socket object
+		self.socket_fd_list = []
 
 		for network in self.network_list:
-			connection = net.irc.IRC()
+			connection = net.irc.IRC(network['_name_'])
 			connection.connect(
 				network['address'],
-				network['port'],
+				int(network['port']),
 				network['nick'],
 				network['real_name'],
 				network['channels']
 			)
-			self.logger.info(
-							 'Connected to %s on port %s in channels %s',
-			                 network['address'],
-							 network['port'],
-							 network['channels']
-			)
 			network['connection'] = connection
+			self.socket_fd_list.append(connection)
 
-		scheduler = api.scheduler.Scheduler()
-		loader = api.loader.Loader(scheduler, self, conn)
+		self.scheduler = api.scheduler.Scheduler()
+		loader = api.loader.Loader(self.scheduler, self, self.conn)
 		loader.load_all(self.load_extensions)
 
 
 	def run(self):
 		while True:
-			for network in self.network_list:
+			networks = select.select(self.socket_fd_list, [], [])[0]
+			for network in filter(lambda x: x['connection'] in networks, self.network_list):
+				#network = self.network_list[0]
 				connection = network['connection']
 				for line in connection.poll():
 					line = string.rstrip(line)
@@ -47,8 +49,8 @@ class Bot():
 						if response['type'] != 'unknown':
 							if response['data']: data = response['data']
 							else: data = None
-							scheduler.call_event(response['type'], data, network)
-							conn.commit()
+							self.scheduler.call_event(response['type'], data, network)
+							self.conn.commit()
 						#print response
 						if response['type'] == 'connect':
 							connection.join()
@@ -64,14 +66,24 @@ class Bot():
 		
 		try:
 			self.load_extensions = config.get('~~Bot~~', 'load_extensions')
-			self.load_extensions = string.split(self.load_extensions, ',')
+			if self.load_extensions != '~~All~~':
+				self.load_extensions = string.split(self.load_extensions, ',')
 		except ConfigParser.NoOptionError:
-			self.load_extensions = None
+			self.load_extensions = []
 			
 		stdout = config.getboolean('~~Bot~~', 'log2stdout')
 		
-		min_level = getattr(logging, config.get('~~Bot~~', 'min_log_level'))
+		levels = ['INFO', 'DEBUG', 'CRITICAL', 'ERROR', 'WARNING']
+		min_level = string.upper(config.get('~~Bot~~', 'min_log_level'))
+		min_level = getattr(logging, min_level) if min_level in levels else logging.INFO
 		self._config_logger(stdout, min_level, config.get('~~Bot~~', 'log_file_path'))
+		
+		#---Logging Enabled---
+		#TODO: Create temporary list for any loggings raised before logs are configured
+		#      This should be reserved for very critical errors
+		
+		if self.load_extensions == '~~All~~':
+			self.logger.warning('load_extensions value set to load all extensions. Could be dangerous, please ensure all plugins in \'ext\' folder are not malicious.')
 		
 		config._defaults = collections.OrderedDict()
 		defaults = config.items('~~Global~~')
@@ -109,11 +121,12 @@ class Bot():
 		if stdout:
 			logger_factory.addHandler(logging.StreamHandler())
 			
-		format = '[%(asctime)s] %(levelname)-10s %(name)s: %(message)s'
-		dateformat = '%m/%d %H:%M:%S'
+		format = '[%(asctime)s] %(levelname)-8s %(name)s: %(message)s'
+		dateformat = '%b %d, %Y %H:%M:%S'
 		logger_factory.setFormatter(logging.Formatter(format, dateformat))
 		
 		logger_factory.setMinLevel(min_level)
+		self.logger = util.logger_factory.instance().getLogger('main')
 		
 		
 	
