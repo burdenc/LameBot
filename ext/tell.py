@@ -23,7 +23,7 @@ class Tell(Plugin):
 			))
 		if len(tells) != 0:
 			self.sql.execute('DELETE FROM `tell_tells` WHERE target = ? AND network = ?', (data['sender'], network['_name_']))
-			return
+		
 		
 		message = string.split(data['message'])
 		if len(message) >= 3 and message[0] == '.tell':
