@@ -1,4 +1,4 @@
-import socket, string, time, re
+import socket, string, time
 import util.logger_factory
 
 class IRC():
@@ -58,44 +58,7 @@ class IRC():
 		if message[-2:] != '\r\n':
 			message += '\r\n'
 		self.logger.debug('SENDING: %s', message[:-2])
-		sent = self._conn_socket.sendall(message)
-
-#Commonly received message syntax
-class Response():
-	possible_responses = {
-		'connect' : re.compile(r'^(?P<sender>.+) 001 .*$'), #001 connection numeric
-		'channel_message' : re.compile(r'^:(?P<sender>.+)!(?P<host>.+) PRIVMSG (?P<channel>#.+) :(?P<message>.*)$'),
-		'join' : re.compile(r'^:(?P<sender>.+)!(?P<host>.+) JOIN :?(?P<channel>#.+)$'),
-		'ping' : re.compile(r'^PING (?P<sender>.+)$')
-	}
-	
-	@staticmethod
-	def parse(message):
-		print message
-		message = string.split(message, ' ')
-		parsed = {'type':'unknown'}
-		
-		for response, regex in Response.possible_responses.iteritems():
-			match = regex.match(' '.join(message))
-			if match:
-				parsed['type'] = response
-				parsed['data'] = match.groupdict()
-				break
-		
-		return parsed
-		
-	
-	#TODO: make pythonic
-	@staticmethod
-	def parse_hostname(hostname):
-		dict = {}
-		split = hostname.partition('!')[0]
-		dict['nick'] = split[0]
-		split = split[2].partition('@')
-		dict['realname'] = split[0]
-		dict['host'] = split[2]
-		return dict
-		
+		sent = self._conn_socket.sendall(message)	
 	
 #Commonly called command syntax
 class Commands():

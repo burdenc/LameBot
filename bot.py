@@ -3,8 +3,9 @@
 #TODO: flesh out irc.py api
 #TODO: add functionality to control bot via DCC or private message (PRIVMSG ^ACTCP DCC CHAT <host> <port>^A)
 #TODO: convert all channels to lowercase (because IRC network will do that)
+#TODO: add _uninstall_() function for plugins
 
-import net.irc, api.scheduler, api.loader, util.logger_factory
+import net.irc, net.response, net.dcc, api.scheduler, api.loader, util.logger_factory
 import sys, string, time, sqlite3, ConfigParser, collections, logging, select
 
 class Bot():
@@ -36,6 +37,7 @@ class Bot():
 
 
 	def run(self):
+		responder = net.response.Response()
 		while True:
 			networks = select.select(self.socket_fd_list, [], [])[0]
 			for network in filter(lambda x: x['connection'] in networks, self.network_list):
@@ -45,7 +47,7 @@ class Bot():
 					line = string.rstrip(line)
 					#not whitespace
 					if line:
-						response = net.irc.Response.parse(line)
+						response = responder.parse(line)
 						if response['type'] != 'unknown':
 							if response['data']: data = response['data']
 							else: data = None
