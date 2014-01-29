@@ -58,6 +58,11 @@ class Bot():
 							connection.join()
 						if response['type'] == 'ping':
 							connection._send_raw(net.irc.Commands.PONG(response['data']['sender']))
+						if response['type'] == 'dcc_chat':
+							self.logger.info('DCC request received from: %s:%s', response['data']['dcchost'], response['data']['dccport'])
+							dcc_conn = net.dcc.DCC(response['data']['dcchost'], response['data']['dccport'])
+							dcc_conn.connect()
+							dcc_conn._send_raw('Test!')
 					
 	def _parse_config(self, conf_file):
 		config = ConfigParser.ConfigParser()

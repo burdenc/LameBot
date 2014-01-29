@@ -1,4 +1,6 @@
 *.py[cod]
+*.log
+*.db
 
 # C extensions
 *.so
