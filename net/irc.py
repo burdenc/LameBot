@@ -1,7 +1,8 @@
 import socket, string, time
 import util.logger_factory
+from net.connection import Connection
 
-class IRC():
+class IRC(Connection):
 	def __init__(self, name):
 		self.name = name
 		self.logger = util.logger_factory.instance().getLogger('net.irc.'+name)
@@ -14,10 +15,7 @@ class IRC():
 		self.chan_list = channels
 		channels = ','.join(channels)
 		
-		self._conn_socket = socket.socket()
-		#No buffer
-		self._conn_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-		self._conn_socket.connect((host, port))
+		super(IRC, self).connect()
 		
 		self._send_raw(Commands.NICK(nick))
 		self._send_raw(Commands.USER(nick, real_name))
@@ -31,7 +29,7 @@ class IRC():
 		
 	def disconnect(self, reason = 'cya nerds'):
 		self._send_raw(Commands.QUIT(reason))
-		self._conn_socket.close()
+		super(IRC, self).disconnect()
 	
 	#Channels is comma delimited str
 	def join(self, channels = None):
@@ -43,22 +41,6 @@ class IRC():
 		
 	def msg(self, target, message):
 		self._send_raw(Commands.PRIVMSG(target, message))
-		
-	def poll(self):
-		buffer = self._conn_socket.recv(1024)
-		buffer = string.rstrip(buffer)
-		buffer = string.split(buffer, '\r\n')
-		return buffer
-	
-	#Used to comply with select.select()
-	def fileno(self):
-		return self._conn_socket.fileno()
-		
-	def _send_raw(self, message):
-		if message[-2:] != '\r\n':
-			message += '\r\n'
-		self.logger.debug('SENDING: %s', message[:-2])
-		sent = self._conn_socket.sendall(message)	
 	
 #Commonly called command syntax
 class Commands():

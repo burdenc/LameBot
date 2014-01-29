@@ -1,5 +1,3 @@
-#TODO: change api to allow multiple server connections
-#TODO: use pyconf to load in servers to connect to, nick info, etc.
 #TODO: flesh out irc.py api
 #TODO: add functionality to control bot via DCC or private message (PRIVMSG ^ACTCP DCC CHAT <host> <port>^A)
 #TODO: convert all channels to lowercase (because IRC network will do that)
