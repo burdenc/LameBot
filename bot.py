@@ -3,7 +3,7 @@
 #TODO: convert all channels to lowercase (because IRC network will do that)
 #TODO: add _uninstall_() function for plugins
 
-import net.irc, net.response, net.dcc, net.dcc_passive, api.scheduler, api.loader, util.logger_factory, util.config
+import net.irc, net.response, net.dcc, api.scheduler, api.loader, util.logger_factory, util.config
 import sys, time, sqlite3, select, string
 
 class Bot():
@@ -45,7 +45,7 @@ class Bot():
 				#network = self.network_list[0]
 				connection = network['connection']
 				
-				if isinstance(connection, net.dcc_passive.DCCPassive):
+				if isinstance(connection, net.dcc.DCCPassive):
 					client_socket = connection.accept()
 					dcc_conn = net.dcc.DCC(client_socket)
 					self.socket_fd_list.remove(connection)
@@ -74,9 +74,9 @@ class Bot():
 							dcc_conn._send_raw('Test!')
 						if response['type'] == 'passive_dcc_chat':
 							self.logger.info('Passive DCC request received from %s', response['data']['sender'])
-							dcc_conn = net.dcc_passive.DCCPassive()
+							dcc_conn = net.dcc.DCCPassive()
 							dcc_conn.bind()
-							host = net.dcc_passive.ip_to_int(connection.get_ext_address()[0])
+							host = net.dcc.ip_to_int(connection.get_ext_address()[0])
 							connection.ctcp(response['data']['sender'], 'DCC CHAT chat %s %s' % (host, dcc_conn.port))
 							self.socket_fd_list.append(dcc_conn)
 							self.network_list.append({'connection':dcc_conn})
