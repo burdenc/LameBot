@@ -8,11 +8,17 @@ class Connection(object):
 		self.port = port
 		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % (host, port))
 	
+	def __init__(self, socket):
+		self._conn_socket = socket
+		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % socket.getpeername())
+	
 	def connect(self, host = None, port = None, no_buffer = True):
 		if host == None or port == None:
 			host = self.host
 			port = self.port
-	
+		
+		self.logger.debug('Connecting to %s on port %s', host, port)
+		
 		self._conn_socket = socket.socket()
 		
 		if no_buffer:
@@ -39,6 +45,9 @@ class Connection(object):
 	#Used to comply with select.select()
 	def fileno(self):
 		return self._conn_socket.fileno()
+		
+	def get_ext_address(self):
+		return self._conn_socket.getsockname()
 		
 	def _send_raw(self, message):
 		if message[-2:] != '\r\n':

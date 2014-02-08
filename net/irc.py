@@ -41,6 +41,9 @@ class IRC(Connection):
 		
 	def msg(self, target, message):
 		self._send_raw(Commands.PRIVMSG(target, message))
+		
+	def ctcp(self, target, message):
+		self._send_raw(Commands.CTCP(target, message))
 	
 #Commonly called command syntax
 class Commands():
@@ -48,6 +51,10 @@ class Commands():
 	@staticmethod
 	def PRIVMSG(target, message):
 		return 'PRIVMSG %s :%s\r\n' % (target, message)
+		
+	@staticmethod
+	def CTCP(target, message):
+		return Commands.PRIVMSG(target, '\x01%s\x01' % message)
 	
 	@staticmethod
 	def QUIT(message = 'Bye'):

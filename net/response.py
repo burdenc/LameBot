@@ -12,7 +12,8 @@ possible_responses = {
 }
 
 ctcp_commands = {
-	'dcc_chat' : re.compile(r'^DCC CHAT chat (?P<dcchost>\d+) (?P<dccport>\d+)$')
+	'dcc_chat' : re.compile(r'^DCC CHAT chat (?P<dcchost>\d+) (?P<dccport>\d+)$'),
+	'passive_dcc_chat' : re.compile(r'^CHAT$') #DCC Chat initiated by bot rather than user, not a part of CTCP standard
 }
 
 class Response():
@@ -43,7 +44,7 @@ class Response():
 			match = regex.match(message)
 			if match:
 				parsed['type'] = response
-				parsed['data'] = match.groupdict()
+				parsed['data']['dcc'] = match.groupdict()
 				break
 		
 		if parsed['type'] == 'dcc_chat':
