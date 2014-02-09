@@ -44,23 +44,16 @@ class Response():
 			match = regex.match(message)
 			if match:
 				parsed['type'] = response
-				parsed['data']['dcc'] = match.groupdict()
+				parsed['data'].update(match.groupdict())
 				break
 		
 		if parsed['type'] == 'dcc_chat':
 			#Convert IPv4 integer to string
 			try:
-				#Convert host to hex, stripping 0x portion
-				hex_host = hex(int(parsed['data']['dcchost']))[2:]
-				self.logger.debug('Converting %s hex to standard IP address', hex_host)
-				if hex_host[-1:] == 'L': hex_host = hex_host[:-1] #Strip trailing L
-				#Convert hex to standard dot separated string
-				host_str = ''
-				#Group together adjacent hexadecimals into 8 byte hex
-				for byte1, byte2 in zip(hex_host[0::2], hex_host[1::2]):
-					host_str += str(int(byte1+byte2, 16)) #Convert 8 byte hex to decimal
-					host_str += '.'
-				parsed['data']['dcchost'] = host_str[:-1] #Strip trailing dot
+				#Convert int host to hex string, minimum 8 characters
+				hex_host = '%08x' % int(parsed['data']['dcchost'])
+				#Use socket module to convert hex value to ip address string
+				parsed['data']['dcchost'] = socket.inet_ntoa(hex_host.decode('hex'))
 				self.logger.debug('Integer address converted to %s', parsed['data']['dcchost'])
 			except ValueError:
 				self.logger.warning('Bad DCC host supplied: %s', parsed['data']['dcchost'])
