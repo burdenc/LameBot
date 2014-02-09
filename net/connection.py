@@ -8,9 +8,9 @@ class Connection(object):
 		self.port = port
 		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % (host, port))
 	
-	def __init__(self, socket):
+	'''def __init__(self, socket):
 		self._conn_socket = socket
-		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % socket.getpeername())
+		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % socket.getpeername())'''
 	
 	def connect(self, host = None, port = None, no_buffer = True):
 		if host == None or port == None:
