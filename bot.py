@@ -11,45 +11,48 @@ class Bot():
 		config = util.config.parse_config(conf_file)
 		self.logger = util.logger_factory.instance().getLogger('main')
 		
-		self.network_list = config['nets']
+		network_configs = config['nets']
+		self.network_list = []
 
-		self.conn = sqlite3.connect('bot.db')
+		self.sql_conn = sqlite3.connect('bot.db')
 		self.logger.debug('sqlite connection created')
-		
-		#Used to have non-blocking polling of each network via select.select()
-		#Stores file descriptor of each socket object
-		self.socket_fd_list = []
 
-		for network in self.network_list:
-			connection = net.irc.IRC(network['_name_'])
-			connection.connect(
+		#Instantiate each network connection based on config file
+		for network in network_configs:
+			connection = net.irc.IRC(
+				network['_name_'],
 				network['address'],
 				int(network['port']),
 				network['nick'],
 				network['real_name'],
-				network['channels']
+				network['channels'],
+				network['extensions'],
+				network['allowed_channels']
 			)
-			network['connection'] = connection
-			self.socket_fd_list.append(connection)
+			connection.connect()
+			self.network_list.append(connection)
+			
 
 		self.scheduler = api.scheduler.Scheduler()
-		loader = api.loader.Loader(self.scheduler, self, self.conn)
+		loader = api.loader.Loader(self.scheduler, self, self.sql_conn)
 		loader.load_all(config['extensions'])
 
 
 	def run(self):
 		responder = net.response.Response()
 		while True:
-			networks = select.select(self.socket_fd_list, [], [])[0]
-			for network in filter(lambda x: x['connection'] in networks, self.network_list):
-				#network = self.network_list[0]
-				connection = network['connection']
+			#Wait for sockets to raise flag saying bytes are available to be read
+			connections = select.select(self.network_list, [], [])[0]
+			for connection in connections:
 				
 				if isinstance(connection, net.dcc.DCCPassive):
 					client_socket = connection.accept()
-					dcc_conn = net.dcc.DCC(client_socket)
-					self.socket_fd_list.remove(connection)
-					self.network_list.remove(network)
+					
+					#Convert Passive DCC socket to regular one now 
+					#that incoming connection is accepted
+					dcc_conn = net.dcc.DCC(socket = client_socket)
+					
+					self.network_list.remove(connection)
 					client_socket.sendall('Test!\r\n')
 					continue
 				
@@ -61,15 +64,15 @@ class Bot():
 						if response['type'] != 'unknown':
 							if response['data']: data = response['data']
 							else: data = None
-							self.scheduler.call_event(response['type'], data, network)
-							self.conn.commit()
+							self.scheduler.call_event(response['type'], data, connection)
+							self.sql_conn.commit()
 						if response['type'] == 'connect':
 							connection.join()
 						if response['type'] == 'ping':
 							connection._send_raw(net.irc.Commands.PONG(response['data']['sender']))
 						if response['type'] == 'dcc_chat':
-							self.logger.info('DCC request received from: %s:%s', response['data']['dcc']['dcchost'], response['data']['dcc']['dccport'])
-							dcc_conn = net.dcc.DCC(response['data']['dcc']['dcchost'], response['data']['dcc']['dccport'])
+							self.logger.info('DCC request received from: %s:%s', response['data']['dcchost'], response['data']['dccport'])
+							dcc_conn = net.dcc.DCC(response['data']['dcchost'], response['data']['dccport'])
 							dcc_conn.connect()
 							dcc_conn._send_raw('Test!')
 						if response['type'] == 'passive_dcc_chat':
@@ -78,8 +81,7 @@ class Bot():
 							dcc_conn.bind()
 							host = net.dcc.ip_to_int(connection.get_ext_address()[0])
 							connection.ctcp(response['data']['sender'], 'DCC CHAT chat %s %s' % (host, dcc_conn.port))
-							self.socket_fd_list.append(dcc_conn)
-							self.network_list.append({'connection':dcc_conn})
+							self.network_list.append(dcc_conn)
 	
 if __name__ == '__main__':
 	try:

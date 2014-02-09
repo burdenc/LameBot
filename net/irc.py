@@ -3,28 +3,31 @@ import util.logger_factory
 from net.connection import Connection
 
 class IRC(Connection):
-	def __init__(self, name):
+	def __init__(self, name, host, port, nick, real_name, channels, extensions, allowed_channels):
 		self.name = name
 		self.logger = util.logger_factory.instance().getLogger('net.irc.'+name)
-	
-	def connect(self, host, port = 6667, nick = 'DBBot', real_name = 'My bot', channels = []):
+		
 		self.host = host
 		self.port = port
 		self.nick = nick
 		self.real_name = real_name
 		self.chan_list = channels
-		channels = ','.join(channels)
+		self.extensions = extensions
+		self.allowed_channels = allowed_channels
+	
+	def connect(self):
+		channels = ','.join(self.chan_list)
 		
 		super(IRC, self).connect()
 		
-		self._send_raw(Commands.NICK(nick))
-		self._send_raw(Commands.USER(nick, real_name))
+		self._send_raw(Commands.NICK(self.nick))
+		self._send_raw(Commands.USER(self.nick, self.real_name))
 		
 		self.logger.info(
-						 'Connected to %s on port %s in channels %s',
-						 host,
-						 port,
-						 channels
+		                 'Connected to %s on port %s in channels %s',
+		                 self.host,
+		                 self.port,
+		                 self.chan_list
 		)
 		
 	def disconnect(self, reason = 'cya nerds'):
@@ -36,6 +39,8 @@ class IRC(Connection):
 		if channels is None:
 			channels = self.chan_list
 			channels = ','.join(channels)
+		else:
+			channels = self.chan_list.append(channels)
 		self.logger.debug('Joining channels %s', channels)
 		self._send_raw(Commands.JOIN(channels))
 		
