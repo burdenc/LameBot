@@ -10,6 +10,9 @@ class Tell(Plugin):
 		
 	def _install_(self):
 		self.sql.execute('CREATE TABLE `tell_tells` (target, time, sender, message, network)')
+		
+	def _uninstall_(self):
+		self.sql.execute('DROP TABLE `tell_tells`')
 	
 	def on_msg(self, data, network):
 		self.logger.debug('on_msg called with %s', data)

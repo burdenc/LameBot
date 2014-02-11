@@ -33,3 +33,7 @@ class Plugin():
 	@abstractmethod
 	def _start_(self):
 		pass
+	
+	@abstractmethod
+	def _uninstall_(self):
+		pass
