@@ -8,7 +8,9 @@ class Priority():
 	LOG = 1
 	
 class Result():
-	PREVENT_ALL = 1
+	PREVENT_ALL = 3
+	PREVENT_DEFAULT = 2
+	PREVENT_PLUGINS = 1
 	SUCCESS = None
 
 #Abstract class, do not instantiate
@@ -30,4 +32,8 @@ class Plugin():
 		
 	@abstractmethod
 	def _start_(self):
+		pass
+	
+	@abstractmethod
+	def _uninstall_(self):
 		pass

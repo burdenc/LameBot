@@ -80,7 +80,10 @@ class Bot():
 						if response['type'] != 'unknown':
 							if response['data']: data = response['data']
 							else: data = None
-							self.scheduler.call_event(response['type'], data, connection)
+							prevent_default = self.scheduler.call_event(response['type'], data, connection)
+							if prevent_default:
+								continue
+								
 							self.sql_conn.commit()
 						if response['type'] == 'connect':
 							connection.join()

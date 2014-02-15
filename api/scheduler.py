@@ -20,6 +20,8 @@ class Scheduler():
 		#try:
 		if event_name not in self._registered:
 			return
+
+		prevent_default = False
 		
 		for priority, obj, func in sorted(self._registered[event_name], reverse=True):
 			#Test to see if extension enabled in channel
@@ -30,9 +32,13 @@ class Scheduler():
 							continue
 			except (KeyError, TypeError, AttributeError):
 				pass
-			
+
 			result = func(obj, data, network)
-			if result is Result.PREVENT_ALL:
-				return
+			if result == Result.PREVENT_ALL or result == Result.PREVENT_DEFAULT:
+				prevent_default = True
+			if result is Result.PREVENT_ALL or result is Result.PREVENT_PLUGINS:
+				break
+
+		return prevent_default
 		#except:
 			#pass
