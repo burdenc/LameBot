@@ -7,12 +7,13 @@ class Connection(object):
 		self.host = host
 		self.port = port
 		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % (host, port))
+		self.name = '%s:%s' % (self.host, self.port)
 	
 	'''def __init__(self, socket):
 		self._conn_socket = socket
 		self.logger = util.logger_factory.instance().getLogger('net.conn.(%s:%s)' % socket.getpeername())'''
 	
-	def connect(self, host = None, port = None, no_buffer = True):
+	def connect(self, host = None, port = None, no_buffer = True, timeout = None):
 		if host == None or port == None:
 			host = self.host
 			port = self.port
@@ -35,7 +36,7 @@ class Connection(object):
 	def poll(self):
 		buffer = self._conn_socket.recv(1024)
 		if buffer == '':
-			self.logger.info('Connection closed by peer')
+			self.logger.error('Connection closed by peer')
 			self.disconnect()
 			raise ConnectionClosedError()
 		buffer = string.rstrip(buffer)

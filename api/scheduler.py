@@ -24,14 +24,13 @@ class Scheduler():
 		for priority, obj, func in sorted(self._registered[event_name], reverse=True):
 			#Test to see if extension enabled in channel
 			ext_name = obj.__class__.__name__
-			if ext_name not in network.extensions:
-				try:
+			try:
+				if ext_name not in network.extensions:
 					if data['channel'] not in network.allowed_channels[ext_name]:
-						continue
-				except KeyError, TypeError:
-					pass
+							continue
+			except (KeyError, TypeError, AttributeError):
+				pass
 			
-			print 'CALLING %s for %s' % (func, event_name)
 			result = func(obj, data, network)
 			if result is Result.PREVENT_ALL:
 				return

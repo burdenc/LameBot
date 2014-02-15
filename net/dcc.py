@@ -12,6 +12,11 @@ class DCC(Connection):
 			self.host = host
 			self.port = port
 			self.logger = util.logger_factory.instance().getLogger('net.DCC.(%s:%s)' % (host, port))
+			
+		self.name = '%s:%s' % (self.host, self.port)
+			
+	def msg(self, message):
+		self._send_raw(message)
 		
 #Used to create DCC object once incoming socket connection is accepted
 class DCCPassive(Connection):

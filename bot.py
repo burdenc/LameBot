@@ -53,7 +53,23 @@ class Bot():
 					dcc_conn = net.dcc.DCC(socket = client_socket)
 					
 					self.network_list.remove(connection)
-					client_socket.sendall('Test!\r\n')
+					self.network_list.append(dcc_conn)
+					connection._conn_socket.close()
+					del connection
+					self.scheduler.call_event('dcc_connect', {}, dcc_conn)
+					continue
+					
+				if isinstance(connection, net.dcc.DCC):
+					try:
+						messages = connection.poll()
+					except net.connection.ConnectionClosedError:
+						self.scheduler.call_event('dcc_disconnect', {}, dcc_conn)
+						connection._conn_socket.close()
+						self.network_list.remove(connection)
+						del connection
+					else:
+						for message in messages:
+							self.scheduler.call_event('dcc_message', {'message':message}, dcc_conn)
 					continue
 				
 				for line in connection.poll():
@@ -73,8 +89,22 @@ class Bot():
 						if response['type'] == 'dcc_chat':
 							self.logger.info('DCC request received from: %s:%s', response['data']['dcchost'], response['data']['dccport'])
 							dcc_conn = net.dcc.DCC(response['data']['dcchost'], response['data']['dccport'])
-							dcc_conn.connect()
-							dcc_conn._send_raw('Test!')
+							
+							#TODO: Make less non-deterministic (have a higher timeout on its own thread?)
+							try:
+								dcc_conn.connect(timeout = 1)
+							except socket.error:
+								self.logger.error('DCC Connection from %s to %s:%s timed out', 
+								                   response['data']['sender'], 
+								                   response['data']['dcchost'], 
+								                   response['data']['dccport']
+								)
+								connection.msg(response['data']['sender'], 'DCC connection failed, try "/ctcp %s CHAT" instead' % connection.nick)
+								del dcc_conn
+							else:
+								self.scheduler.call_event('dcc_connect', {}, dcc_conn)
+								self.network_list.append(dcc_conn)
+
 						if response['type'] == 'passive_dcc_chat':
 							self.logger.info('Passive DCC request received from %s', response['data']['sender'])
 							dcc_conn = net.dcc.DCCPassive()
